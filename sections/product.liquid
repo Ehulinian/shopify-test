@@ -1,0 +1,545 @@
+<div class="product-wrapper">
+    <div class="product-swiper">
+      <div class="swiper mainSwiper">
+        <div class="swiper-wrapper">
+          {% for image in product.images %}
+            <div class="swiper-slide"
+              data-color="{% if image.alt contains 'color:' %}{{ image.alt | split: 'color:' | last | strip | downcase }}{% else %}all{% endif %}">
+              <img src="{{ image | image_url: width: 300 }}" alt="{{ image.alt | escape }}">
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if section.settings.show_arrows %}
+          <div class="swiper-button-next main-next"></div>
+          <div class="swiper-button-prev main-prev"></div>
+        {% endif %}
+
+        {% if section.settings.show_pagination %}
+          <div class="swiper-pagination main-pagination"></div>
+        {% endif %}
+      </div>
+
+      <div class="swiper thumbsSwiper">
+        <div class="swiper-wrapper">
+          {% for image in product.images %}
+            <div class="swiper-slide"
+              data-color="{% if image.alt contains 'color:' %}{{ image.alt | split: 'color:' | last | strip | downcase }}{% else %}all{% endif %}">
+              <img src="{{ image | image_url: width: 100 }}" alt="{{ image.alt | escape }}">
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="product-info">
+      <h1>{{ product.title }}</h1>
+      <p>{{ product.price | money }}</p>
+      <p>{{ product.description }}</p>
+
+      <div class="color-buttons">
+        {% assign color_option_index = -1 %}
+        {% for option in product.options_with_values %}
+          {% assign option_name_downcased = option.name | downcase %}
+          {% if option_name_downcased == 'color' %}
+            {% assign color_option_index = forloop.index0 %}
+          {% endif %}
+        {% endfor %}
+
+        {% assign used_colors = '' | split: ',' %}
+        {% for variant in product.variants %}
+          {% assign variant_color = variant.options[color_option_index] | downcase %}
+          {% unless used_colors contains variant_color %}
+            {% assign used_colors = used_colors | push: variant_color %}
+            <button
+              class="color-button"
+              type="button"
+              aria-label="{{ variant_color }}"
+              data-variant-id="{{ variant.id }}"
+              data-color="{{ variant_color }}"
+              style="background-color: {{ variant_color }};"
+            ></button>
+          {% endunless %}
+        {% endfor %}
+      </div>
+
+      <div class="product-form">
+        {% form 'product', product %}
+          {% assign current_variant = product.selected_or_first_available_variant %}
+          <select name="id" class="js-variant-selector" style="display:none;">
+            {% for variant in product.variants %}
+              {% assign color_option = '' %}
+              {% for option in variant.options %}
+                {% assign option_index = forloop.index0 %}
+                {% assign option_name_downcased = product.options_with_values[option_index].name | downcase %}
+                {% if option_name_downcased == 'color' %}
+                  {% assign color_option = option %}
+                {% endif %}
+              {% endfor %}
+              <option
+                value="{{ variant.id }}"
+                data-color="{{ color_option | downcase }}"
+                {% if variant == current_variant %} selected {% endif %}
+              >
+                {{ variant.title }} - {{ variant.price | money }}
+              </option>
+            {% endfor %}
+          </select>
+
+          <input type="submit" value="Add to cart">
+          {{ form | payment_button }}
+        {% endform %}
+      </div>
+      {% assign entries = product.metafields.custom.accordion_entries.value %}
+
+      {% if entries and entries.size > 0 %}
+        <div class="product-accordion">
+          {% for entry in entries %}
+            {% assign parts = entry | split: '||' %}
+            {% assign title = parts[0] | strip %}
+            {% assign description = parts[1] | strip %}
+
+            {% if title != blank and description != blank %}
+              <div class="accordion-item">
+                <button class="accordion-header">
+                {{ title }}
+                <svg class="accordion-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M8 9L12 13L16 9" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+
+                <div class="accordion-body">{{ description }}</div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="color: gray;">No accordion content available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+<style>
+  .product-wrapper {
+  display: flex;
+  justify-content: space-between;
+  margin-inline: auto;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+
+ .product-swiper {
+    flex: 1 1 50%;
+    min-width: 300px;
+    max-width: 600px;
+  }
+
+  .product-info {
+    flex: 1 1 40%;
+    min-width: 280px;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+@media (max-width: 768px) {
+  .product-wrapper {
+    flex-direction: column;
+    width: 100%;
+    gap: 30px;
+  }
+
+  .product-swiper,
+  .product-info {
+    flex-basis: auto !important; 
+    max-width: 100% !important;
+    min-width: auto !important;
+    width: 100% !important;
+  }
+}
+
+
+
+  .product-main-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+
+ 
+
+  .color-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .color-button {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .color-button:hover {
+    border-color: #000;
+  }
+
+  .color-button.active {
+  border-color: black;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px black;
+}
+
+  .product-form input[type="text"],
+  .product-form input[type="submit"] {
+    padding: 10px;
+    margin-top: 10px;
+    width: 100%;
+    font-size: 16px;
+  }
+
+  .product-form input[type="submit"] {
+    background-color: #000;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+
+  .product-form input[type="submit"]:hover {
+    background-color: #333;
+  }
+
+.accordion-item {
+  border-bottom: 1px solid #e5e7eb; 
+  background: #ffffff; 
+  transition: background 0.2s ease-out; 
+}
+
+.accordion-item:last-child {
+  border-bottom: none;
+}
+
+.accordion-header {
+  background: #f9fafb; 
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 1rem 1.25rem;
+  font-weight: 600; 
+  font-size: 1.0625rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  transition: background 0.2s ease-out, border-left-color 0.2s ease-out; 
+  border-left: 4px solid transparent;
+  border-radius: 0.375rem; 
+}
+
+.accordion-header:hover {
+  background: #eff6ff;
+  border-left-color: #3b82f6;
+}
+
+.accordion-header:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.accordion-item.active .accordion-header {
+  background: #eff6ff;
+  border-left-color: #2563eb;
+}
+
+.accordion-icon {
+  transition: transform 0.3s ease-out;
+  transform-origin: center;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.accordion-item.active .accordion-icon {
+  transform: rotate(180deg);
+}
+
+
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, padding 0.3s ease-out; 
+  background: #ffffff; 
+  padding: 0 1.25rem;
+  border-left: 4px solid #2563eb;
+  border-radius: 0 0 0.375rem 0.375rem;
+}
+
+.accordion-item.active .accordion-body {
+  padding: 1rem 1.25rem;
+  max-height: 1000px; 
+}
+
+.accordion-content {
+  font-size: 0.9375rem; 
+  line-height: 1.6;
+  color: #374151; 
+}
+
+@media (max-width: 640px) {
+  .accordion-header {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  .accordion-body {
+    padding: 0 1rem;
+  }
+
+  .accordion-item.active .accordion-body {
+    padding: 0.75rem 1rem;
+  }
+
+  .accordion-content {
+    font-size: 0.875rem;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .accordion-header {
+    background: #ffffff;
+    border-left-color: #1e40af;
+  }
+
+  .accordion-header:hover,
+  .accordion-item.active .accordion-header {
+    background: #dbeafe;
+    border-left-color: #1e40af;
+  }
+
+  .accordion-body {
+    background: #ffffff;
+  }
+}
+
+ .mainSwiper {
+  width: 100%;
+  height: 500px;
+}
+
+@media (max-width: 768px) {
+  .mainSwiper {
+    height: 300px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .mainSwiper {
+    height: 200px;
+  }
+}
+
+
+.mainSwiper .swiper-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; 
+}
+
+
+  .thumbsSwiper {
+    height: 100px;
+    box-sizing: border-box;
+    padding: 10px 0;
+  }
+
+  .thumbsSwiper .swiper-slide {
+    width: 100px;
+    height: 100%;
+    opacity: 0.4;
+    cursor: pointer;
+  }
+
+  .thumbsSwiper .swiper-slide-thumb-active {
+    opacity: 1;
+    border: 2px solid #007acc;
+  }
+
+  .thumbsSwiper .swiper-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  @media screen and (max-width: 768px) {
+    .product-main-section {
+      flex-direction: column;
+    }
+
+    .product-swiper,
+    .product-info {
+      max-width: 100%;
+    }
+  }
+</style>
+
+
+<script>
+ document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".accordion-header").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const item = btn.closest(".accordion-item");
+        item.classList.toggle("active");
+      });
+    });
+  });
+
+
+document.addEventListener('DOMContentLoaded', function () {
+  const allMainSlides = [...document.querySelectorAll('.mainSwiper .swiper-slide')];
+  const allThumbSlides = [...document.querySelectorAll('.thumbsSwiper .swiper-slide')];
+
+  const mainSwiper = new Swiper(".mainSwiper", {
+    spaceBetween: {{ section.settings.space_between }},
+    slidesPerView: 1,
+    navigation: {
+      nextEl: ".main-next",
+      prevEl: ".main-prev",
+    },
+    pagination: {
+      el: ".main-pagination",
+      clickable: true,
+    },
+    thumbs: {
+      swiper: null,
+    },
+  });
+
+  const thumbsSwiper = new Swiper(".thumbsSwiper", {
+    spaceBetween: 10,
+    slidesPerView: {{ section.settings.slides_desktop }},
+    freeMode: true,
+    watchSlidesProgress: true,
+  });
+
+  mainSwiper.thumbs.swiper = thumbsSwiper;
+
+  function filterByColor(color) {
+  mainSwiper.removeAllSlides();
+  thumbsSwiper.removeAllSlides();
+
+  const filteredMainSlides = allMainSlides.filter(slide => {
+    const slideColor = slide.getAttribute("data-color");
+    return color === 'all' || slideColor === color;
+  });
+
+  const filteredThumbSlides = allThumbSlides.filter(slide => {
+    const slideColor = slide.getAttribute("data-color");
+    return color === 'all' || slideColor === color;
+  });
+
+  filteredMainSlides.forEach(slide => mainSwiper.appendSlide(slide.outerHTML));
+  filteredThumbSlides.forEach(slide => thumbsSwiper.appendSlide(slide.outerHTML));
+
+  mainSwiper.update();
+  thumbsSwiper.update();
+
+  mainSwiper.slideTo(0);
+  thumbsSwiper.slideTo(0);
+
+  mainSwiper.thumbs.swiper = thumbsSwiper;
+
+  const updatedThumbs = document.querySelectorAll('.thumbsSwiper .swiper-slide');
+  updatedThumbs.forEach((thumb, index) => {
+    thumb.addEventListener('click', () => {
+      mainSwiper.slideTo(index);
+    });
+  });
+}
+
+
+  const colorButtons = document.querySelectorAll('.color-button');
+
+  colorButtons.forEach(button => {
+    button.addEventListener('click', function () {
+      const selectedColor = this.getAttribute('data-color');
+      filterByColor(selectedColor);
+
+      colorButtons.forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+
+      const variantId = this.getAttribute('data-variant-id');
+      const variantSelector = document.querySelector('.js-variant-selector');
+      if (variantSelector) {
+        variantSelector.value = variantId;
+      }
+    });
+  });
+
+  if (colorButtons.length > 0) {
+    const firstButton = colorButtons[0];
+    firstButton.classList.add('active');
+    const firstColor = firstButton.getAttribute('data-color');
+    filterByColor(firstColor);
+
+    const variantId = firstButton.getAttribute('data-variant-id');
+    const variantSelector = document.querySelector('.js-variant-selector');
+    if (variantSelector && variantId) {
+      variantSelector.value = variantId;
+    }
+  }
+});
+
+
+</script>
+
+{% schema %}
+{
+  "name": "t:general.product",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "range",
+      "id": "slides_desktop",
+      "label": "Слайдів у превʼю (thumbs) на десктопі",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "space_between",
+      "label": "Відступ між слайдами (px)",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "default": 10
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pagination",
+      "label": "Показати пагінацію",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_arrows",
+      "label": "Показати стрілки навігації",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Swiper Gallery"
+    }
+  ]
+}
+{% endschema %}

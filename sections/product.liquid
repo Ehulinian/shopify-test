@@ -390,15 +390,28 @@
 
 
 <script>
- document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll(".accordion-header").forEach((btn) => {
-      btn.addEventListener("click", function () {
-        const item = btn.closest(".accordion-item");
+document.addEventListener("DOMContentLoaded", function () {
+  const accordionMode = "{{ section.settings.accordion_mode }}";
+  const headers = document.querySelectorAll(".accordion-header");
+
+  headers.forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const item = btn.closest(".accordion-item");
+
+      if (accordionMode === "single") {
+        const isActive = item.classList.contains("active");
+        document.querySelectorAll(".accordion-item.active").forEach((activeItem) => {
+          activeItem.classList.remove("active");
+        });
+        if (!isActive) {
+          item.classList.add("active");
+        }
+      } else if (accordionMode === "multiple") {
         item.classList.toggle("active");
-      });
+      }
     });
   });
-
+});
 
 document.addEventListener('DOMContentLoaded', function () {
   const allMainSlides = [...document.querySelectorAll('.mainSwiper .swiper-slide')];
@@ -534,6 +547,22 @@ document.addEventListener('DOMContentLoaded', function () {
       "id": "show_arrows",
       "label": "Показати стрілки навігації",
       "default": true
+    },
+    {
+      "type": "select",
+      "id": "accordion_mode",
+      "label": "Режим акордеона",
+      "default": "single",
+      "options": [
+        {
+          "value": "single",
+          "label": "Відкритий тільки один"
+        },
+        {
+          "value": "multiple",
+          "label": "Можна відкривати декілька"
+        }
+      ]
     }
   ],
   "presets": [
